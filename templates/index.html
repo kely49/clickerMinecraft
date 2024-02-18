@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Clicker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Para evitar que el body tenga scroll */
+
+        }
+
+        #container {
+            display: flex;
+            height: 100%;
+            position: relative; /* Añade posición relativa para permitir el posicionamiento absoluto */
+            
+        }
+
+        #sidebar {
+            position: relative; /* Establece la posición relativa para que los pseudoelementos se posicionen correctamente */
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        #sidebar::before {
+            content: ""; /* Añade un pseudoelemento ::before */
+            position: absolute; /* Lo posiciona de forma absoluta */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("{{ url_for('static', filename='bosque.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-color: rgba(240, 240, 240, 0.8); /* Color de fondo transparente */
+            filter: blur(5px); /* Aplica un filtro de desenfoque al fondo */
+            opacity: 0.8; /* Opacidad */
+            z-index: -1; /* Coloca el pseudoelemento detrás del contenido */
+        }
+
+        #clickImage {
+            width: 300px;
+            cursor: pointer;
+            position: relative; /* Asegura que el clickImage esté posicionado correctamente */
+            z-index: 1; /* Coloca el clickImage delante del pseudoelemento */
+            animation: glow 1.5s infinite; /* Aplica la animación infinita */
+        }
+
+        #iconoBloque{
+            width: 40px;
+            margin-left: 20px;
+        }
+
+        .product-container .content .iconoBloquePrecio {
+            width: 20px;
+            margin: 0;
+        }
+
+        #container h1 {
+            font-family: "Arial", sans-serif;
+            font-size: 32px; /* Tamaño de fuente más grande */
+            font-weight: bold;
+            color: #0b0b0b; /* Color de texto oscuro */
+            text-transform: capitalize; /* Convertir todas las palabras a capitalizar */
+            margin-bottom: 20px; /* Espacio en la parte inferior del elemento */
+            text-shadow: 2px 2px 2px rgba(24, 24, 24, 0.628); /* Sombra de texto suave */
+            padding-bottom: 5px; /* Espaciado en la parte inferior del t exto */
+        }
+
+        #clickCount {
+            margin: 0;
+            font-size: 32px;
+            color: #333;
+            text-align: center;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            position: relative; /* Asegura que el clickCount esté posicionado correctamente */
+            z-index: 1; /* Coloca el clickCount delante del pseudoelemento */
+            font-variant-numeric: lining-nums;
+        }
+
+        #divContador{
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            border: 2px solid #333;
+            display: flex; 
+            align-items: center;
+            
+        }
+
+        .divPrecio{
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            border: 2px solid #333;
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            max-width: 200px; /* Ancho máximo para el divPrecio */
+        }
+
+
+        @keyframes glow {
+            0% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.5)); }
+            50% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5)); }
+            100% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.5)); }
+        }
+
+        @keyframes roturaAnimacion {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0;
+                transform: scale(1.5);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes desintegracion {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+
+        /* Nuevo Sidebar a la derecha de la pantalla */
+        #sidebar-right {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100%;
+            background-color: #f0f0f0;
+            background-image: url("{{ url_for('static', filename='fondoSidebar2.jpg') }}");
+        }
+
+        #sidebar-right > div {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .store-item-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Estilos para los elementos de la tienda */
+        .store-item-container {
+            display: flex; /* Muestra los elementos de la tienda en una fila */
+            flex-wrap: wrap; /* Permite que los elementos se envuelvan en una nueva línea */
+            width: 100%; /* Ancho completo */
+            margin-bottom: 10px;
+            background-color: transparent; /* Fondo transparente */
+            overflow: hidden; /* Oculta los elementos que sobresalen */
+            height: 45px; /* Altura inicial para mostrar solo una fila completa */
+            transition: height 0.3s ease; /* Transición suave para la altura */
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .store-item {
+            width: 45px; /* Establece el ancho para cada elemento (33.33% - espacio entre elementos) */
+            height: 45px; /* Altura fija para los elementos */
+            background-color: white; /* Fondo blanco */
+            border: 2px solid black; /* Borde negro */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin:5px;
+        }
+
+        .store-item-container.disable-hover:hover {
+            height: auto; /* Mantén la altura automática */
+        }
+
+        .store-item img {
+            width: 45px; /* Establece el ancho de la imagen */
+            height: auto; /* Permite que la altura se ajuste automáticamente según el ancho */
+        }
+
+        .store-item-title {
+            font-size: 32px; /* Tamaño de fuente más grande */
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px; /* Mayor espacio inferior */
+            background-color: #333; /* Color de fondo */
+            color: rgb(0, 0, 0); /* Color de texto */
+            padding: 10px; /* Relleno */
+            border-radius: 5px; /* Bordes redondeados */
+            background-image: url("{{ url_for('static', filename='ladrillo.png') }}");
+            text-shadow: 2px 2px 2px rgba(255, 255, 255, 0.628); /* Sombra de texto suave */
+        }
+
+        .product-container {
+            display: none;
+            align-items: center;
+            width: 100%; /* Ancho relativo al contenedor padre */
+            height: 60px; /* Altura de 20px */
+            border: 1px solid #ccc; /* Borde para visualización */
+            padding: 10px; /* Espaciado interno */
+            background-image: url("{{ url_for('static', filename='fondoProductContainer.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 10px;
+        }
+
+        .product-container:hover {
+            box-shadow: 0 0 10px rgba(92, 69, 9, 0.83); /* Sombra al pasar el ratón por encima */
+            transition: box-shadow 0.3s ease; /* Efecto de transición suave */
+        }
+
+        .product-container .image-container {
+            overflow: hidden;
+            width: 100px; /* Ancho fijo para el contenedor de la imagen */
+            height: 100px; /* Alto fijo para el contenedor de la imagen */
+        }
+
+        .product-container img {
+            width: 100%; /* Establece el ancho de la imagen al 100% del contenedor */
+            height: 100%; /* Establece la altura de la imagen al 100% del contenedor */
+            object-fit: cover; /* Recorta la imagen según los bordes del contenedor */
+            margin-right: 25px; /* Aumenta el margen entre la imagen y el contenido */
+            
+        }
+
+        .product-container img.productImage {
+            
+            outline: 2px solid white; /* Define un borde sólido de 2px de ancho y color blanco */
+        }
+
+        .product-container .content {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px; /* Tamaño mínimo para evitar ajustes */
+
+        }
+
+        .product-container .productName {
+            font-weight: bold;
+            font-size: 25px;
+            margin-bottom: 10px; /* Ajustar según sea necesario */
+            white-space: nowrap;
+        }
+
+        .product-container .price {
+            font-style: italic;
+            font-size: 15px;
+            margin-right: 5px;
+            font-weight: bold;
+            color: red;
+            
+        }
+        .enPropiedad {
+            font-weight: bold;
+            font-size: 45px;
+            color: rgb(119, 52, 13); /* Cambia el color del texto según tu preferencia */
+            text-shadow: 
+                -2px -2px 0 black,  
+                2px -2px 0 black,
+                -2px 2px 0 black,
+                2px 2px 0 black; /* Agrega un borde negro alrededor del texto */
+            margin-left: auto;
+            margin-bottom: 3px;
+            opacity: 0.5; /* Hace el texto un poco transparente */
+            overflow: hidden;
+        }
+        .centro {
+            position: absolute; /* Posiciona absolutamente el centro */
+            left: 300px; /* Ancho del primer sidebar */
+            right: 300px; /* Ancho del segundo sidebar */
+            top: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center; /* Centra horizontalmente el contenido */
+            align-items: center; /* Centra verticalmente el contenido */
+            background-color: rgba(255, 255, 255, 0.224); /* Color de fondo con opacidad */
+        }
+
+        .centro::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-image: url("{{ url_for('static', filename='fondoPrincipal.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2; /* Opacidad del fondo */
+            z-index: -1; /* Asegura que el fondo esté detrás del contenido */
+        }
+        .login-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .login-form h1 {
+            margin-bottom: 20px;
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .login-form button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-form button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Ocultar la barra de desplazamiento vertical */
+        .scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Otra opción para ocultar la barra de desplazamiento */
+        .scroll {
+            scrollbar-width: none; /* Firefox */
+            overflow-y: auto; 
+            overflow-x: hidden;
+        }
+
+        #porSegundo {
+            font-size: 24px; /* Tamaño de fuente */
+            margin-top: 20px; /* Margen superior */
+            color: #fff; /* Color de texto */
+            text-align: center; /* Alineación centrada */
+            padding: 15px; /* Relleno interno */
+            border-radius: 10px; /* Bordes redondeados */
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4); /* Sombra de texto */
+
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            background-color: #c0954c;
+            border: 3px solid #2c2c2c;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.759);
+            width: fit-content;
+            height: fit-content;
+            /* Establecer un ancho máximo para evitar que el popup sea demasiado grande */
+            max-width: 300px;
+            background-image: url("{{ url_for('static', filename='fondoPopup.png') }}");
+            background-size: cover;
+            background-position: center;
+        }
+
+        .popup h3 {
+            margin-top: 0;
+            font-size: 20px;
+            color: #151515;
+        }
+
+        .popup p {
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #170d04;
+        }
+
+        .popup span, .popupUpgrade span{
+            font-weight:bold;
+        }
+
+        .popup p:last-child {
+            margin-bottom: 0;
+        }
+        .popup::before {
+            content: '';
+            position: absolute;
+            top: 30%; /* Ajuste para moverlo un poco más arriba */
+            right: -10px;
+            transform: translateY(-50%);
+            border-width: 10px 0 10px 10px;
+            border-style: solid;
+            border-color: transparent transparent transparent #ffffff;
+        }
+        .herobrine-popup::before {
+            position: absolute;
+            right: -10px;
+            transform: translateY(-50%);
+            border-width: 10px 0 10px 10px;
+            border-style: solid;
+            border-color: transparent transparent transparent #ffffff;
+        }
+
+        .popupUpgrade {
+            display: none;
+            position: fixed;
+            z-index: 9999; /* Asegúrate de que el z-index sea mayor que otros elementos para que esté por encima */
+            top: 15%; /* Centra verticalmente */
+            left: 73%; /* Centra horizontalmente */
+            transform: translate(-50%, -50%); /* Centra el popup en la pantalla */
+            width: fit-content;
+            height: fit-content;
+            /* Establecer un ancho máximo para evitar que el popup sea demasiado grande */
+            max-width: 200px;
+            background-color: white;
+            border: 2px solid #333;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Sombra */
+            overflow: auto; /* Habilita el desplazamiento si el contenido es más grande que el tamaño del popup */
+            background-image: url("{{ url_for('static', filename='fondoPopup.png') }}");
+            background-size: cover;
+            background-position: center;
+        }
+
+        .titleUpgrade {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        /* Estilos para la descripción del popup */
+        .descripcion {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .divPrecioUpgrade {
+            font-size: 16px;
+            display: flex; /* Usa flexbox para distribuir los elementos */
+            align-items: center; /* Centra verticalmente los elementos */
+            float: right;
+        }
+
+        /* Estilos para el precio dentro del contenedor */
+        .precioUpgrade {
+            font-weight: bold;
+            margin-right: 10px; /* Espacio entre el precio y la imagen */
+        }
+
+        /* Estilos para el icono dentro del contenedor */
+        #iconoBloqueUpgrade {
+            width: 25px;
+        }
+
+        .fin {
+            background-image: url("{{ url_for('static', filename='fin.png') }}");
+            background-size: cover;
+            background-position: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999; /* Asegura que la imagen esté en el frente */
+        }
+
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+<body>
+    <div id="container">
+        <div id="sidebar">
+            <h1>Tierra</h1>
+            <img id="clickImage" src="{{ url_for('static', filename='tierra.png') }}" alt="Click Image"  data-rotura="{{ roturas_bloques }}">
+            <div id="divContador">
+                <img id="iconoBloque" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                <p id="clickCount">0</p>
+            </div>
+            <p id="porSegundo">Por segundo: 0</p>
+        </div>
+    </div>
+
+    <div class="centro">
+        <div class="login-form">
+            <h1>Iniciar sesión</h1>
+            <form id="loginForm" action="/login" method="post">
+                <input type="text" name="username" placeholder="Nombre de usuario" required><br>
+                <input type="password" name="password" placeholder="Contraseña" required><br>
+                <button type="submit">Iniciar sesión</button>
+            </form>
+        </div>
+    </div>
+    <!-- Nuevo Sidebar a la derecha de la pantalla -->
+    <div id="sidebar-right">
+        <div class="store-item-title">Tienda</div>
+        <!-- Elementos de la tienda -->
+        <div class="store-item-container">
+            <!-- Steve -->
+            <div class="store-item" data-aparicion="10" data-price="100" data-elemento="Steve" data-gereracion="x2" onclick="comprarUpgrade(this)" >
+                <img src="{{ url_for('static', filename='picoMadera.png') }}" alt="picoMadera">
+            </div>
+            <div class="store-item" data-aparicion="30" data-price="500" data-elemento="Steve" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='picoPiedra.png') }}" alt="picoPiedra">
+            </div>
+            <div class="store-item" data-aparicion="60" data-price="100000" data-elemento="Steve" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='picoHierro.png') }}" alt="picoHierro">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="1000000" data-elemento="Steve" data-gereracion="x3" onclick="comprarUpgrade(this)"> 
+                <img src="{{ url_for('static', filename='picoOro.png') }}" alt="picoOro">
+            </div>
+            <div class="store-item" data-aparicion="300" data-price="10000000" data-elemento="Steve" data-gereracion="x5" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='picoDiamante.png') }}" alt="picoDiamante">
+            </div>
+            <!-- Zombie -->
+            <div class="store-item" data-aparicion="1" data-price="1000" data-elemento="Zombie" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='zombieUpgrade.png') }}" alt="zombieUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="10" data-price="5000" data-elemento="Zombie" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='zombieUpgrade.png') }}" alt="zombieUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="40" data-price="50000" data-elemento="Zombie" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='zombieUpgrade.png') }}" alt="zombieUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="5000000" data-elemento="Zombie" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='zombieUpgrade.png') }}" alt="zombieUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="150" data-price="5000000000" data-elemento="Zombie" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='zombieUpgrade.png') }}" alt="zombieUpgrade">
+            </div>
+            <!-- Esqueletos -->
+            <div class="store-item" data-aparicion="1" data-price="11000" data-elemento="Esqueleto" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoUpgrade.png') }}" alt="esqueletoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="55000" data-elemento="Esqueleto" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoUpgrade.png') }}" alt="esqueletoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="550000" data-elemento="Esqueleto" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoUpgrade.png') }}" alt="esqueletoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="50" data-price="55000000" data-elemento="Esqueleto" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoUpgrade.png') }}" alt="esqueletoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="55000000000" data-elemento="Esqueleto" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoUpgrade.png') }}" alt="esqueletoUpgrade">
+            </div>
+            <!-- Arañas -->
+            <div class="store-item" data-aparicion="1" data-price="120000" data-elemento="Araña" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aranaUpgrade.png') }}" alt="aranaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="600000" data-elemento="Araña" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aranaUpgrade.png') }}" alt="aranaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="6000000" data-elemento="Araña" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aranaUpgrade.png') }}" alt="aranaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="50" data-price="600000000" data-elemento="Araña" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aranaUpgrade.png') }}" alt="aranaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="600000000000" data-elemento="Araña" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aranaUpgrade.png') }}" alt="aranaUpgrade">
+            </div>
+            <!-- Aldeanos -->
+            <div class="store-item" data-aparicion="1" data-price="1300000" data-elemento="Aldeano" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aldeanoUpgrade.png') }}" alt="aldeanoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="6500000" data-elemento="Aldeano" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aldeanoUpgrade.png') }}" alt="aldeanoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="65000000" data-elemento="Aldeano" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aldeanoUpgrade.png') }}" alt="aldeanoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="50" data-price="65000000000" data-elemento="Aldeano" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aldeanoUpgrade.png') }}" alt="aldeanoUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="650000000000" data-elemento="Aldeano" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='aldeanoUpgrade.png') }}" alt="aldeanoUpgrade">
+            </div>
+            <!-- creepers -->
+            <div class="store-item" data-aparicion="1" data-price="14000000" data-elemento="Creeper" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='creeperUpgrade.png') }}" alt="creeperUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="70000000" data-elemento="Creeper" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='creeperUpgrade.png') }}" alt="creeperUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="700000000" data-elemento="Creeper" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='creeperUpgrade.png') }}" alt="creeperUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="50" data-price="70000000000" data-elemento="Creeper" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='creeperUpgrade.png') }}" alt="creeperUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="7000000000000" data-elemento="Creeper" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='creeperUpgrade.png') }}" alt="creeperUpgrade">
+            </div>
+            <!-- brujas -->
+            <div class="store-item" data-aparicion="1" data-price="200000000" data-elemento="Bruja" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='brujaUpgrade.png') }}" alt="brujaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="1000000000" data-elemento="Bruja" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='brujaUpgrade.png') }}" alt="brujaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="10000000000" data-elemento="Bruja" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='brujaUpgrade.png') }}" alt="brujaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="50" data-price="1000000000000" data-elemento="Bruja" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='brujaUpgrade.png') }}" alt="brujaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="100000000000000" data-elemento="Bruja" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='brujaUpgrade.png') }}" alt="brujaUpgrade">
+            </div>
+            <!-- guardianes -->
+            <div class="store-item" data-aparicion="1" data-price="330000000" data-elemento="Guardian" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='guardianUpgrade.png') }}" alt="guardianUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="16500000000" data-elemento="Guardian" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='guardianUpgrade.png') }}" alt="guardianUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="165000000000" data-elemento="Guardian" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='guardianUpgrade.png') }}" alt="guardianUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="50" data-price="16500000000000" data-elemento="Guardian" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='guardianUpgrade.png') }}" alt="guardianUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="100" data-price="1650000000000000" data-elemento="Guardian" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='guardianUpgrade.png') }}" alt="guardianUpgrade">
+            </div>
+            <!-- cubo magmas -->
+            <div class="store-item" data-aparicion="1" data-price="510000000000" data-elemento="Cubo magma" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='cuboMagmaUpgrade.png') }}" alt="cuboMagmaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="255000000000" data-elemento="Cubo magma" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='cuboMagmaUpgrade.png') }}" alt="cuboMagmaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="2550000000000" data-elemento="Cubo magma" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='cuboMagmaUpgrade.png') }}" alt="cuboMagmaUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="50" data-price="255000000000000" data-elemento="Cubo magma" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='cuboMagmaUpgrade.png') }}" alt="cuboMagmaUpgrade">
+            </div>
+            <!-- esqueletos wither -->
+            <div class="store-item" data-aparicion="1" data-price="750000000000" data-elemento="Esqueleto Wither" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoWitherUpgrade.png') }}" alt="esqueletoWitherUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="3750000000000" data-elemento="Esqueleto Wither" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoWitherUpgrade.png') }}" alt="esqueletoWitherUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="37500000000000" data-elemento="Esqueleto Wither" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='esqueletoWitherUpgrade.png') }}" alt="esqueletoWitherUpgrade">
+            </div>
+            <!-- withers -->
+            <div class="store-item" data-aparicion="1" data-price="10000000000000" data-elemento="Wither" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='witherUpgrade.png') }}" alt="witherUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="50000000000000" data-elemento="Wither" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='witherUpgrade.png') }}" alt="witherUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="25" data-price="500000000000000" data-elemento="Wither" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='witherUpgrade.png') }}" alt="witherUpgrade">
+            </div>
+            <!-- endermans -->
+            <div class="store-item" data-aparicion="1" data-price="140000000000000" data-elemento="Enderman" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='endermanUpgrade.png') }}" alt="endermanUpgrade">
+            </div>
+            <div class="store-item" data-aparicion="5" data-price="700000000000000" data-elemento="Enderman" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='endermanUpgrade.png') }}" alt="endermanUpgrade">
+            </div>
+            <!-- enderdragons -->
+            <div class="store-item" data-aparicion="1" data-price="1000000000000000" data-elemento="Enderdragon" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='enderdragonUpgrade.png') }}" alt="enderdragonUpgrade">
+            </div>
+            <!-- herobrines -->
+            <div class="store-item" data-aparicion="1" data-price="19000000000000000" data-elemento="Herobrine" data-gereracion="x2" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='herobrineUpgrade.png') }}" alt="herobrineUpgrade">
+            </div>
+            <!-- bloques -->
+            <div class="store-item" data-aparicion="50000" data-price="999999" data-elemento="Bloque" data-gereracion="+1%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="250000" data-price="5000000" data-elemento="Bloque" data-gereracion="+1%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="500000" data-price="10000000" data-elemento="Bloque" data-gereracion="+1%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="2500000" data-price="50000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="5000000" data-price="100000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="25000000" data-price="500000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="250000000" data-price="5000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="500000000" data-price="10000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="2500000000" data-price="50000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="5000000000" data-price="100000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="25000000000" data-price="500000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="50000000000" data-price="1000000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="250000000000" data-price="5000000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="500000000000" data-price="10000000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="2500000000000" data-price="50000000000000" data-elemento="Bloque" data-gereracion="+2%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="5000000000000" data-price="100000000000000" data-elemento="Bloque" data-gereracion="+3%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+            <div class="store-item" data-aparicion="25000000000000" data-price="500000000000000" data-elemento="Bloque" data-gereracion="+3%" onclick="comprarUpgrade(this)">
+                <img src="{{ url_for('static', filename='iconoBloque.png') }}" alt="iconoBloque">
+            </div>
+        </div>
+        <!-- Añade más elementos de la tienda si es necesario -->
+        
+        <div class="scroll" >
+            <div class="product-container" data-tittle="Steve" style="display:flex;" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='steve.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">Steve</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">15</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="product-container" data-tittle="Zombie" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">1100</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Esqueleto" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">12000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Araña" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">130000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Aldeano" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">1400000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Creeper" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">20000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Bruja" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">330000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Guardian" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">5100000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Cubo magma" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">75000000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Esqueleto Wither" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">1000000000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Wither" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">14000000000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Enderman" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">170000000000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Enderdragon" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">2100000000000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+            <div class="product-container" data-tittle="Herobrine" onclick="comprar(this)">
+                <img class="productImage" src="{{ url_for('static', filename='bloqueado.png') }}" alt="Excavador" style="width: 60px; height: 60px;">
+                <div class="content">
+                    <div class="title productName">???</div>
+                    <div style="display: flex; align-items: center; height: 20px;"> <!-- Agrega un alto fijo al contenedor de content -->
+                        <div class="divPrecio" style="display: flex; align-items: center;"> <!-- Contenedor para el precio -->
+                            <img class="iconoBloquePrecio" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+                            <span class="price">26000000000000000</span>
+                        </div>
+                        <span class="enPropiedad">0</span> <!-- Número sin el estilo de divPrecio -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="popup">
+            <h3 class="title"></h3>
+            <p class="produce-info" style="display:block;">Cada <span class="spanItem"> </span> produce <span class="spanCantidad"> </span> bloques</p>
+            <p class="producing-info" style="display:block;"> <span class="spanEnPropiedad"> </span> <span class="spanItemProducc"> </span> produciendo <span class="spanProduccion"> </span> bloques por segundo</p>
+            <p class="pInexistente" style="display:none;"></p>
+        </div>
+        <div class="popupUpgrade">
+            <h3 class="titleUpgrade"></h3>
+            <p class="descripcion"><span class="cuantoUpgrade"></span> de eficacia en <span class="spanItemUpgrade"></span></p>
+            <div class="divPrecioUpgrade">
+                <p class="precioUpgrade"></p>
+                <img id="iconoBloqueUpgrade" src="{{ url_for('static', filename='iconoBloque.png') }}" alt="Otra Imagen">
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

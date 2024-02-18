@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .menu {
+            margin-top: 10px;
+            background-color: #7a4519; /* Marrón oscuro */
+            padding: 10px;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            border: none;
+            border-radius: 25px;
+        }
+
+        .menu button {
+            background-color: #bb4f1d; /* Marrón claro */
+            color: white;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+
+        .menu button:hover {
+            background-color: #a86532;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="menu" data-sesion="{{usuario}}">
+        <button onclick="location.href='#'">opcion 1</button>
+        <!--Cambio de contraseña, borrar datos, eliminar cuenta, guardar partida (aunque hay guardados cada 5 minutos), barra para bajar volumen (musica minecraft de fondo)-->
+        <button onclick="location.href='#'">Opción 2</button>
+        <button onclick="location.href='#'">Opción 3</button>
+        <button onclick="location.href='#'">configuracion</button>
+    </div>
+
+    <div class="content">
+        <!-- Contenido principal aquí -->
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
